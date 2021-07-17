@@ -85,6 +85,11 @@ class RelationshipClause extends BaseClause {
     {
         if (is_array($this->values)) {
             foreach ((array) $this->values as $relationship => $filters) {
+                
+                if (! $this->relationshipExists($query, $relationship)) {
+                    continue;
+                }
+                
                 foreach ((array) $filters as $filter => $values) {
                     if (is_array($values)) {
                         $query->whereHas($relationship, function ($query) use ($values, $filter) {
@@ -100,6 +105,22 @@ class RelationshipClause extends BaseClause {
         }
 
         return $query;
+    }
+
+    protected function relationshipExists($query, $relationship)
+    {
+        $relationships = explode('.', $relationship);
+        $model = $query->getModel();
+
+        foreach ($relationships as $relationship) {
+            if (! method_exists($model, $relationship)) {
+                return false;
+            }
+
+            $model = $model->{$relationship}()->getModel();
+        }
+
+        return true;
     }
 
     protected function validate($value): bool {
