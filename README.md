@@ -18,6 +18,7 @@
         - [Page](#page)
         - [Limit](#limit)
         - [Relationship](#relationship)
+        - [With Relationship](#with-relationship)
         - [With Trashed](#withtrashed)
         - [Order By](#orderby)
         - [Where](#where)
@@ -113,6 +114,7 @@ User::select('name')->filter()->get();
 * [page](#page): `integer default(1) ― optional`
 * [limit](#limit): `integer default(25) ― optional`
 * [relationship](#relationship): `array ― optional`
+* [withrelationship](#with-relationship): `array ― optional`
 * [withtrashed](#withtrashed): `boolean default(false) ― optional`
 * [orderby](#orderby): `array ― optional`
 * [fieldname[where]](#where): `string|array ― optional`
@@ -255,19 +257,24 @@ protected $filters = ['limit'];
 ```
 **Example**:
 `https://startapp.id/api/v1/users?limit=25`
+
 ### Relationship
 ```
 relationship: array|string ― optional
 ```
 Convention:
 ```
-> GET /api/v1/users?relationship={relation}
-> GET /api/v1/users?relationship[]={relation1}
-> GET /api/v1/users?relationship[]={relation2}
+> GET /api/v1/users?relationship[{relation}][{fieldname}]={searchText}
+> GET /api/v1/users?relationship[{relation}][{fieldname}][{filter}]={searchText}
+> GET /api/v1/users?relationship[{relation}][{fieldname}][{filter}][]={searchText}
+> GET /api/v1/users?relationship[{nested.relation}][{fieldname}][{filter}][]={searchText}
 
-> GET /api/v1/users?relationship=role
-> GET /api/v1/users?relationship[]=role
-> GET /api/v1/users?relationship[]=permissions
+
+> GET /api/v1/users?relationship[company][name]=apple
+> GET /api/v1/users?relationship[company][name][contain]=app
+> GET /api/v1/users?relationship[company][name][contain][]=app
+> GET /api/v1/users?relationship[company.country.city][name]=miami
+
 ```
 
 In Users.php
@@ -275,9 +282,36 @@ In Users.php
 protected $filters = ['relationship'];
 ```
 **Example**:
-`https://startapp.id/api/v1/users?relationship=role`
+`https://startapp.id/api/v1/users?relationship[company][name]=apple`
 
-`https://startapp.id/api/v1/users?relationship[]=role&relationship[]=permissions`
+`https://startapp.id/api/v1/users?relationship[company.city][name][orWhere][]=miami&relationship[company.city][name][orWhere][]=boston`
+
+**Note** 
+The relationship needs to be declared in the model.
+
+### With Relationship
+```
+withrelationship: array|string ― optional
+```
+Convention:
+```
+> GET /api/v1/users?withrelationship={relation}
+> GET /api/v1/users?withrelationship[]={relation1}
+> GET /api/v1/users?withrelationship[]={relation2}
+
+> GET /api/v1/users?withrelationship=role
+> GET /api/v1/users?withrelationship[]=role
+> GET /api/v1/users?withrelationship[]=permissions
+```
+
+In Users.php
+```php
+protected $filters = ['withrelationship'];
+```
+**Example**:
+`https://startapp.id/api/v1/users?withrelationship=role`
+
+`https://startapp.id/api/v1/users?withrelationship[]=role&withrelationship[]=permissions`
 ### Withtrashed
 ```
 withtrashed: boolean default(false) ― optional
