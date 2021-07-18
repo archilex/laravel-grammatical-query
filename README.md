@@ -18,6 +18,7 @@
         - [Page](#page)
         - [Limit](#limit)
         - [Relationship](#relationship)
+        - [With Relationship](#with-relationship)
         - [With Trashed](#withtrashed)
         - [Order By](#orderby)
         - [Where](#where)
@@ -44,6 +45,7 @@
     - [Conditional Filters](#Conditional-Filters)
     - [Transformers](#Transformers)
         - [Convert To Cents](#convert-to-cents)
+    - [Manually Passing Filter Array (Livewire)](#Manually-Passing-Filter-Array-Livewire)
 
 ## Describing the Problem
 
@@ -114,6 +116,7 @@ User::select('name')->filter()->get();
 * [page](#page): `integer default(1) ― optional`
 * [limit](#limit): `integer default(25) ― optional`
 * [relationship](#relationship): `array ― optional`
+* [withrelationship](#with-relationship): `array ― optional`
 * [withtrashed](#withtrashed): `boolean default(false) ― optional`
 * [orderby](#orderby): `array ― optional`
 * [fieldname[where]](#where): `string|array ― optional`
@@ -256,19 +259,24 @@ protected $filters = ['limit'];
 ```
 **Example**:
 `https://startapp.id/api/v1/users?limit=25`
+
 ### Relationship
 ```
 relationship: array|string ― optional
 ```
 Convention:
 ```
-> GET /api/v1/users?relationship={relation}
-> GET /api/v1/users?relationship[]={relation1}
-> GET /api/v1/users?relationship[]={relation2}
+> GET /api/v1/users?relationship[{relation}][{fieldname}]={searchText}
+> GET /api/v1/users?relationship[{relation}][{fieldname}][{filter}]={searchText}
+> GET /api/v1/users?relationship[{relation}][{fieldname}][{filter}][]={searchText}
+> GET /api/v1/users?relationship[{nested.relation}][{fieldname}][{filter}][]={searchText}
 
-> GET /api/v1/users?relationship=role
-> GET /api/v1/users?relationship[]=role
-> GET /api/v1/users?relationship[]=permissions
+
+> GET /api/v1/users?relationship[company][name]=apple
+> GET /api/v1/users?relationship[company][name][contain]=app
+> GET /api/v1/users?relationship[company][name][contain][]=app
+> GET /api/v1/users?relationship[company.country.city][name]=miami
+
 ```
 
 In Users.php
@@ -276,9 +284,36 @@ In Users.php
 protected $filters = ['relationship'];
 ```
 **Example**:
-`https://startapp.id/api/v1/users?relationship=role`
+`https://startapp.id/api/v1/users?relationship[company][name]=apple`
 
-`https://startapp.id/api/v1/users?relationship[]=role&relationship[]=permissions`
+`https://startapp.id/api/v1/users?relationship[company.city][name][orWhere][]=miami&relationship[company.city][name][orWhere][]=boston`
+
+**Note** 
+The relationship needs to be declared in the model.
+
+### With Relationship
+```
+withrelationship: array|string ― optional
+```
+Convention:
+```
+> GET /api/v1/users?withrelationship={relation}
+> GET /api/v1/users?withrelationship[]={relation1}
+> GET /api/v1/users?withrelationship[]={relation2}
+
+> GET /api/v1/users?withrelationship=role
+> GET /api/v1/users?withrelationship[]=role
+> GET /api/v1/users?withrelationship[]=permissions
+```
+
+In Users.php
+```php
+protected $filters = ['withrelationship'];
+```
+**Example**:
+`https://startapp.id/api/v1/users?withrelationship=role`
+
+`https://startapp.id/api/v1/users?withrelationship[]=role&withrelationship[]=permissions`
 ### Withtrashed
 ```
 withtrashed: boolean default(false) ― optional
@@ -902,6 +937,7 @@ Output:
 | mehrad   | mehrad<i></i>@startapp.id  | mehrad123  |  20  | 2020-09-01 |
 | hossein  | hossein<i></i>@startapp.id | hossein123 |  22  | 2020-11-01 |
 
+
 ### Transformers
 Sometimes the query string you want to present might differ from the way the data is stored in the database. As an example, you may store order subtotals in cents in your database, but in the URL you may want the dollar amount to show. To accomplish this you can use a transformer.
 
@@ -919,3 +955,38 @@ Now you can use the dollar amount in your query and the transformer will convert
 `orders?subtotal=25` will query the database for subtotals equal to 2500
 
 `orders?subtotal[between][]=125&subtotal[between][]=225` will query the database for subtotals between 12500 and 22500.
+
+### Manually Passing Filter Array (Livewire)
+When using Livewire to filter data, subsequent query string changes do not trigger new requests. We can work around this by manually passing an array of filters.
+
+Example:
+```php
+User::filter(['username' => 'mehrad123'])->get();
+```
+
+Another example:
+```php
+User::filter([
+    'username' => [
+        'contain' => 'medhrad',
+    ],
+    'email' => [
+        'contain' => 'startapp.id',
+     ]
+])->get();
+```
+
+You can also combine this with conditional filters:
+```php
+User::filter([
+    'username' => 'mehrad123',
+    'email' => [
+        'contains' => 'startapp.id'
+    ]
+], 'username')->get();
+```
+
+The above would only query the username (not the email) since only the username was included as a conditional.
+
+**Note that the filter array must be passed before the conditionals.**
+

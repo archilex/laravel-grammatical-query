@@ -9,6 +9,7 @@ use GrammaticalQuery\FilterQueryString\Filters\{
     LimitClause,
     SearchClause,
     RelationshipClause,
+    WithRelationshipClause,
     WithTrashedClause,
     OrderClause,
 };
@@ -24,6 +25,7 @@ trait FilterQueryString {
         'limit' => LimitClause::class,
         'page' => LimitClause::class,
         'relationship' => RelationshipClause::class,
+        'withrelationship' => WithRelationshipClause::class,
         'withtrashed' => WithTrashedClause::class,
         'orderby' => OrderClause::class,
     ];
@@ -50,12 +52,18 @@ trait FilterQueryString {
 
     private function getFilters($filters)
     {
+        $passedFilters = ! empty($filters) && is_array($filters[0]) ? array_shift($filters) : null;
+                
         $filter = function ($key) use($filters) {
 
             $filters = $filters ?: $this->filters ?: [];
 
             return $this->unguardFilters != true ? in_array($key, $filters) : true;
         };
+        
+        if ($passedFilters) {
+            return array_filter($passedFilters, $filter, ARRAY_FILTER_USE_KEY) ?? [];
+        }
 
         return array_filter(request()->query(), $filter, ARRAY_FILTER_USE_KEY) ?? [];
     }
