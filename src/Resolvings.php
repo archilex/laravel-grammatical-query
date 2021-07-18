@@ -12,7 +12,33 @@ trait Resolvings {
 
         $availableFilter = $this->availableFilters[$filterName] ?? $this->availableFilters['default'];
 
+        $values = $this->applyTransformers($filterName, $values);
+
         return app($availableFilter, ['filter' => $filterName, 'values' => $values]);
+    }
+
+    private function applyTransformers($filterName, $values)
+    {
+        $values = $this->convertToCents($filterName, $values);
+
+        return $values;
+    }
+
+    private function convertToCents($filterName, $values)
+    {
+        if (empty($this->centsFields)) {
+            return $values;
+        }
+        
+        if (in_array($filterName, $this->centsFields)) {
+            array_walk_recursive($values, function (&$value) {
+                if (! is_array($value) && is_numeric($value)) {
+                    $value = $value * 100;
+                }
+            });
+        }
+
+        return $values;
     }
 
     private function resolveCustomFilter($filterName, $values)
