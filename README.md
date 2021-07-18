@@ -43,6 +43,8 @@
         - [Is Not Null](#is-not-null)
     - [Custom Filters](#Custom-Filters)
     - [Conditional Filters](#Conditional-Filters)
+    - [Transformers](#Transformers)
+        - [Convert To Cents](#convert-to-cents)
     - [Manually Passing Filter Array (Livewire)](#Manually-Passing-Filter-Array-Livewire)
 
 ## Describing the Problem
@@ -935,6 +937,25 @@ Output:
 | mehrad   | mehrad<i></i>@startapp.id  | mehrad123  |  20  | 2020-09-01 |
 | hossein  | hossein<i></i>@startapp.id | hossein123 |  22  | 2020-11-01 |
 
+
+### Transformers
+Sometimes the query string you want to present might differ from the way the data is stored in the database. As an example, you may store order subtotals in cents in your database, but in the URL you may want the dollar amount to show. To accomplish this you can use a transformer.
+
+#### Convert To Cents
+Add to your model the fields that are stored in cents
+
+```php
+protected $centsFields = [
+    'subtotal',
+    'total,
+];
+```
+Now you can use the dollar amount in your query and the transformer will convert it to cents.
+
+`orders?subtotal=25` will query the database for subtotals equal to 2500
+
+`orders?subtotal[between][]=125&subtotal[between][]=225` will query the database for subtotals between 12500 and 22500.
+
 ### Manually Passing Filter Array (Livewire)
 When using Livewire to filter data, subsequent query string changes do not trigger new requests. We can work around this by manually passing an array of filters.
 
@@ -968,3 +989,4 @@ User::filter([
 The above would only query the username (not the email) since only the username was included as a conditional.
 
 **Note that the filter array must be passed before the conditionals.**
+
