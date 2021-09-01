@@ -21,6 +21,7 @@
         - [With Relationship](#with-relationship)
         - [With Trashed](#withtrashed)
         - [Order By](#orderby)
+        - [Order By Relationships](#Orderby-BelongsTo-Relationship)
         - [Where](#where)
         - [Or Where](#or-where)
         - [Equal](#equal)
@@ -384,6 +385,42 @@ Output:
 
 **Bare in mind** that `orderby` parameter with invalid values will be ignored from query and has no effect to the result.
 
+### Orderby BelongsTo Relationship
+```
+orderby: array|string ― optional
+```
+Orderby is the equivalent to `order by` sql statement which can be used flexible in `FilterQueryString`:
+
+Conventions:
+```bash
+> GET /api/v1/users?orderby=[relationship][{relationship}][{fieldname}]={asc|desc}
+> GET /api/v1/users?orderby=[relationship][{nested.relationship}][{fieldname}]={asc|desc}
+
+> GET /api/v1/orders?orderby=[relationship][donor][name]=asc
+> GET /api/v1/orders?orderby=[relationship][donor.user][email]=asc
+```
+
+In Order.php
+```php
+protected $filters = ['orderby'];
+
+public function donor()
+{
+    return $this->belongsTo(Donor::class);
+}
+```
+
+In Donor.php
+```php
+public function user()
+{
+    return $this->belongsTo(User::class);
+}
+```
+
+- **Note** Currently, ordering by relationships only works with BelongsTo relationships and can only go 2 relationships deep.
+
+**Bare in mind** that `orderby` parameter with invalid values will be ignored from query and has no effect to the result.
 
 ### Where
 ```
