@@ -292,6 +292,9 @@ protected $filters = ['relationship'];
 **Note** 
 The relationship needs to be declared in the model.
 
+### RelationshipSum
+Adds a withSum subquery to the given relationship. 
+
 ### With Relationship
 ```
 withrelationship: array|string ― optional
@@ -385,7 +388,7 @@ Output:
 
 **Bare in mind** that `orderby` parameter with invalid values will be ignored from query and has no effect to the result.
 
-### Orderby BelongsTo Relationship
+### Orderby Relationship
 ```
 orderby: array|string ― optional
 ```
@@ -399,7 +402,7 @@ Conventions:
 > GET /api/v1/orders?orderby=[relationship][donor][name]=asc
 > GET /api/v1/orders?orderby=[relationship][donor.user][email]=asc
 ```
-
+#### Belongs To
 In Order.php
 ```php
 protected $filters = ['orderby'];
@@ -418,7 +421,18 @@ public function user()
 }
 ```
 
-- **Note** Currently, ordering by relationships only works with BelongsTo relationships and can only go 2 relationships deep.
+#### HasOne
+In User.php
+```php
+protected $filters = ['orderby'];
+
+public function latestOrder()
+{
+    return $this->hasOne(Order::class)->latest();
+}
+```
+
+- **Note** Currently, ordering by relationships only works with BelongsTo relationships up to two levels deep and HasOne relationships one level deep.
 
 **Bare in mind** that `orderby` parameter with invalid values will be ignored from query and has no effect to the result.
 
