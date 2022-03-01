@@ -54,8 +54,16 @@ class OrderClause extends BaseClause {
         $direction = $this->values['relationship'][$relationship][$relationshipField];
         
         if (count($relationships) === 1) {
-            return $query->orderBy($relationshipModel::select($relationshipTable . '.' . $relationshipField)
-                ->whereColumn($relationshipTable . '.' . $relationshipPrimaryKey, $table . '.' . $relationshipForeignKey), $direction);
+            
+            if ($this->getMethodType($model, $relationship) === 'BelongsTo') {
+                return $query->orderBy($relationshipModel::select($relationshipTable . '.' . $relationshipField)
+                    ->whereColumn($relationshipTable . '.' . $relationshipPrimaryKey, $table . '.' . $relationshipForeignKey), $direction);
+            }
+            
+            // Has One
+            return $query->select($table . '.*')
+                ->join($relationshipTable, $relationshipTable . '.' . $model->getForeignKey(), '=', $table . '.' . $model->getKeyName())
+                ->orderBy($relationshipTable . '.' . $relationshipField, $direction);
         }
 
         if (count($relationships) === 2) {
@@ -93,7 +101,7 @@ class OrderClause extends BaseClause {
             }
 
             if (! $this->relationshipTypeIsValid($model, $relationship)) {
-                return $query;
+                return false;
             }
 
             $model = $model->{$relationship}()->getModel();
@@ -104,7 +112,7 @@ class OrderClause extends BaseClause {
 
     protected function relationshipTypeIsValid($class, $method): bool
     {
-        return $this->getMethodType($class, $method) === 'BelongsTo'; 
+        return $this->getMethodType($class, $method) === 'BelongsTo' || $this->getMethodType($class, $method) === 'HasOne'; 
     }
 
     protected function getMethodType($class, $method): string
