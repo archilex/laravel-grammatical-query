@@ -2,83 +2,36 @@
 
 namespace GrammaticalQuery\FilterQueryString\Filters;
 
-use GrammaticalQuery\FilterQueryString\Filters\ComparisonClauses\{
+use GrammaticalQuery\FilterQueryString\Filters\HavingClauses\{
     EqualClause,
     GreaterThanClause,
     GreaterThanEqualClause,
     LessThanClause,
     LessThanEqualClause,
-    NotEqualClause
-};
-
-use GrammaticalQuery\FilterQueryString\Filters\LikeClauses\{
-    WhereLikeClause,
-    WhereNotLikeClause,
-    WhereContainClause,
-    WhereNotContainClause,
-    WhereStartWithClause,
-    WhereEndWithClause,
-};
-
-use GrammaticalQuery\FilterQueryString\Filters\BetweenClauses\{
+    NotEqualClause,
     WhereBetweenClause,
-    WhereNotBetweenClause,
-    WhereInClause,
-    WhereNotInClause
-};
-
-use GrammaticalQuery\FilterQueryString\Filters\NullClauses\{
-    WhereNullClause,
-    WhereNotNullClause
 };
 
 use Illuminate\Database\Eloquent\Builder;
 
-class RelationshipClause extends BaseClause {
+class RelationshipSumClause extends BaseClause {
     use EqualClause;
     use NotEqualClause;
     use GreaterThanClause;
     use GreaterThanEqualClause;
     use LessThanClause;
     use LessThanEqualClause;
-
-    use WhereLikeClause;
-    use WhereNotLikeClause;
-    use WhereContainClause;
-    use WhereNotContainClause;
-    use WhereStartWithClause;
-    use WhereEndWithClause;
-
     use WhereBetweenClause;
-    use WhereNotBetweenClause;
-    use WhereInClause;
-    use WhereNotInClause;
-
-    use WhereNullClause;
-    use WhereNotNullClause;
 
     protected $availableFilters = [
-        'default' => 'where',
-        'where' => 'where',
-        'orwhere' => 'orWhere',
+        'default' => 'eq',
         'eq' => 'equal',
         'gt' => 'greaterThan',
         'gtEq' => 'greaterThanEqual',
         'lt' => 'lessThan',
         'ltEq' => 'lessThanEqual',
         'notEq' => 'notEqual',
-        'like' => 'like',
-        'contain' => 'contain',
-        'notcontain' => 'notContain',
-        'startwith' => 'startwith',
-        'endwith' => 'endwith',
-        'notlike' => 'notLike',
-        'in' => 'in',
-        'notin' => 'notIn',
         'between' => 'between',
-        'notbetween' => 'notBetween',
-        'isnull' => 'isNull',
-        'isnotnull' => 'isNotNull',
     ];
 
     protected function apply($query): Builder
@@ -90,14 +43,19 @@ class RelationshipClause extends BaseClause {
                     continue;
                 }
                 foreach ((array) $filters as $filter => $values) {
+                    
+                    // Create a safe alias to avoid duplicate column conflicts when loading the sum
+                    // in the filterless view
+                    $alias = \Illuminate\Support\Str::snake(
+                        preg_replace('/[^[:alnum:][:space:]_]/u', '', "$relationship " . "sum" . " $filter" . "_safe")
+                    );
+
+                    $query->withSum($relationship . ' as ' . $alias, $filter);
+
                     if (is_array($values)) {
-                        $query->whereHas($relationship, function ($query) use ($values, $filter) {
-                            $this->resolver($query, $filter, $values);
-                        });
+                        $this->resolver($query, $alias, $values);                      
                     } else  {
-                        $query->whereHas($relationship, function ($query) use ($values, $filter) {
-                            $query->where($filter, '=', $values);
-                        });
+                        $query->having($alias, '=', $values);
                     }
                 }
             }
@@ -137,6 +95,7 @@ class RelationshipClause extends BaseClause {
         } else {
             $query = $this->{$method}($query, $filter, $values);
         }
+
         return $query;
     }
 

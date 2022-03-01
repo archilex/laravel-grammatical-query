@@ -29,8 +29,12 @@ trait Resolvings {
         if (empty($this->centsFields)) {
             return $values;
         }
-        
-        if (in_array($filterName, $this->centsFields)) {
+
+        if (
+            (in_array($filterName, $this->centsFields)) || 
+            ($filterName === 'relationship' && in_array(key($values) . '.' . key($values[key($values)]), $this->centsFields)) ||
+            ($filterName === 'relationshipSum' && in_array(key($values) . '.' . key($values[key($values)]), $this->centsFields))
+        ) {  
             array_walk_recursive($values, function (&$value) {
                 if (! is_array($value) && is_numeric($value)) {
                     $value = $value * 100;
