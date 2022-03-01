@@ -24,7 +24,7 @@ class RelationshipSumClause extends BaseClause {
     use WhereBetweenClause;
 
     protected $availableFilters = [
-        'default' => 'eq',
+        'default' => 'equal',
         'eq' => 'equal',
         'gt' => 'greaterThan',
         'gtEq' => 'greaterThanEqual',
