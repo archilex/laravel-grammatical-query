@@ -2,6 +2,8 @@
 
 namespace GrammaticalQuery\FilterQueryString\Filters;
 
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
 
 class OrderClause extends BaseClause {
@@ -50,20 +52,29 @@ class OrderClause extends BaseClause {
         $relationshipPrimaryKey = $relationshipModel->getKeyName();
         $relationshipForeignKey = $relationshipModel->getForeignKey();
 
-        $relationshipField = key($this->values['relationship'][$relationship]);
-        $direction = $this->values['relationship'][$relationship][$relationshipField];
+        $relationshipArray = $this->values['relationship'][$relationship];
+        $relationshipField = key($relationshipArray);
+        $direction = $relationshipArray[$relationshipField];
         
         if (count($relationships) === 1) {
             
+            // Belongs To
             if ($this->getMethodType($model, $relationship) === 'BelongsTo') {
                 return $query->orderBy($relationshipModel::select($relationshipTable . '.' . $relationshipField)
                     ->whereColumn($relationshipTable . '.' . $relationshipPrimaryKey, $table . '.' . $relationshipForeignKey), $direction);
             }
-            
-            // Has One
-            return $query->select($table . '.*')
+
+            // Has One (of Many with Where Clause)
+            // Allows a Has One relationship to be defined on a HasMany relationship through a "where" clause:
+            // $this->hasOne(OrderItem::class)->where('sort_order', 1). The where clause is to be passed as
+            // a raw query "sort_order = 1". The table name will automatically be prepended. 
+            return $query->select($table . '.*', DB::raw('MAX(' . $relationshipTable . '. ' . $relationshipField . ') as '. $relationshipField . ''))
                 ->join($relationshipTable, $relationshipTable . '.' . $model->getForeignKey(), '=', $table . '.' . $model->getKeyName())
-                ->orderBy($relationshipTable . '.' . $relationshipField, $direction);
+                ->groupBy($table . '.id')
+                ->when(isset($relationshipArray['whereRaw']) && $relationshipArray['whereRaw'], function ($query) use ($relationshipTable, $relationshipArray) {
+                    $query->whereRaw($relationshipTable . '.' . $relationshipArray['whereRaw']);
+                })
+                ->orderBy($relationshipField, $direction);
         }
 
         if (count($relationships) === 2) {
