@@ -68,13 +68,13 @@ class OrderClause extends BaseClause {
             // Allows a Has One relationship to be defined on a HasMany relationship through a "where" clause:
             // $this->hasOne(OrderItem::class)->where('sort_order', 1). The where clause is to be passed as
             // a raw query "sort_order = 1". The table name will automatically be prepended. 
-            return $query->select($table . '.*', DB::raw('MAX(' . $relationshipTable . '. ' . $relationshipField . ') as '. $relationshipField . ''))
+            return $query->select($table . '.*', DB::raw('MAX(' . $relationshipTable . '. ' . $relationshipField . ') as '. $relationshipField . '_max'))
                 ->join($relationshipTable, $relationshipTable . '.' . $model->getForeignKey(), '=', $table . '.' . $model->getKeyName())
                 ->groupBy($table . '.id')
                 ->when(isset($relationshipArray['whereRaw']) && $relationshipArray['whereRaw'], function ($query) use ($relationshipTable, $relationshipArray) {
                     $query->whereRaw($relationshipTable . '.' . $relationshipArray['whereRaw']);
                 })
-                ->orderBy($relationshipField, $direction);
+                ->orderBy($relationshipField . '_max', $direction);
         }
 
         if (count($relationships) === 2) {
